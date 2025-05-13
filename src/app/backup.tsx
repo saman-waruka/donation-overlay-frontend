@@ -3,8 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useSearchParams } from 'next/navigation';
-import { getTTSAudio } from '@/utils/tts.utils';
-// import { detectLanguage } from '@/utils/tts.utils';
+import { detectLanguage } from '@/utils/tts.utils';
 
 interface Donation {
   id: string;
@@ -55,83 +54,43 @@ export default function Home() {
     }
   }, [searchParams]);
 
-  // const speakThaiMessage = async (donation: Donation) => {
-  //   if (typeof window !== 'undefined' && window.speechSynthesis) {
-  //     try {
-  //       setFadingItemId(donation.id);
-  //       speakingRef.current = true;
-  //       if (notiAudio) {
-  //         notiAudio.play();
-  //         await new Promise((resolve) => setTimeout(resolve, 1500));
-  //       }
-  //       const message = `คุณ ${donation.name} บริจาคจำนวน ${donation.amount} บาท ข้อความ: ${donation.message}`;
-  //       console.log('Speaking', message);
-  //       const utterance = new SpeechSynthesisUtterance(message);
-  //       console.log('utterance ', utterance);
-  //       utterance.lang = detectLanguage(message);
-  //       speechSynthesisRef.current = utterance;
+  const speakThaiMessage = async (donation: Donation) => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      try {
+        setFadingItemId(donation.id);
+        speakingRef.current = true;
+        if (notiAudio) {
+          notiAudio.play();
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+        }
+        const message = `คุณ ${donation.name} บริจาคจำนวน ${donation.amount} บาท ข้อความ: ${donation.message}`;
+        console.log('Speaking', message);
+        const utterance = new SpeechSynthesisUtterance(message);
+        console.log('utterance ', utterance);
+        utterance.lang = detectLanguage(message);
+        speechSynthesisRef.current = utterance;
 
-  //       utterance.onend = () => {
-  //         setTimeout(() => {
-  //           queueRef.current = queueRef.current.filter(
-  //             (q) => q.id !== donation.id
-  //           );
-  //           setVisibleQueue([...queueRef.current]);
-  //           setFadingItemId(null);
-  //           speakingRef.current = false;
-  //         }, 500); // รอ fade ออก
-  //       };
+        utterance.onend = () => {
+          setTimeout(() => {
+            queueRef.current = queueRef.current.filter(
+              (q) => q.id !== donation.id
+            );
+            setVisibleQueue([...queueRef.current]);
+            setFadingItemId(null);
+            speakingRef.current = false;
+          }, 500); // รอ fade ออก
+        };
 
-  //       utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
-  //         setFadingItemId(null);
-  //         speakingRef.current = false;
-  //         console.error('SpeechSynthesisErrorEvent:', event);
-  //       };
-
-  //       window.speechSynthesis.speak(utterance);
-  //     } catch (error) {
-  //       console.error('speakThaiMessage Error:', error);
-  //     }
-  //   }
-  // };
-
-  const speakThaiMessageV2 = async (donation: Donation) => {
-    try {
-      setFadingItemId(donation.id);
-      speakingRef.current = true;
-
-      if (notiAudio) {
-        notiAudio.play();
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-
-      const message = `คุณ ${donation.name} บริจาคจำนวน ${donation.amount} บาท ข้อความ: ${donation.message}`;
-      console.log('Speaking', message);
-
-      const url = await getTTSAudio(message);
-      const audio = new Audio(url);
-      audio.play();
-
-      audio.onended = () => {
-        setTimeout(() => {
-          queueRef.current = queueRef.current.filter(
-            (q) => q.id !== donation.id
-          );
-          setVisibleQueue([...queueRef.current]);
+        utterance.onerror = (event: SpeechSynthesisErrorEvent) => {
           setFadingItemId(null);
           speakingRef.current = false;
-        }, 500); // รอ fade ออก
-      };
+          console.error('SpeechSynthesisErrorEvent:', event);
+        };
 
-      audio.onerror = (e) => {
-        console.error('Audio playback error', e);
-        setFadingItemId(null);
-        speakingRef.current = false;
-      };
-    } catch (error) {
-      console.error('speakThaiMessage Error:', error);
-      setFadingItemId(null);
-      speakingRef.current = false;
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error('speakThaiMessage Error:', error);
+      }
     }
   };
 
@@ -139,8 +98,7 @@ export default function Home() {
     if (!speakingRef.current && queueRef.current.length > 0) {
       const next = queueRef.current.shift(); // ดึงรายการถัดไป
       if (next) {
-        // speakThaiMessage(next);
-        speakThaiMessageV2(next);
+        speakThaiMessage(next);
       }
     } else {
       setVisibleQueue([...queueRef.current]);
@@ -149,21 +107,20 @@ export default function Home() {
 
   // ✅ เริ่ม loop คอยดึงจาก queue
   useEffect(() => {
-    // if (ttsEnabled) {
-    const interval = setInterval(processQueue, 500);
-    return () => {
-      clearInterval(interval);
-      // หยุดการพูดถ้ามีการ unmount component
-      if (speechSynthesisRef.current && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-    };
-    // }
-  }, [processQueue]);
+    if (ttsEnabled) {
+      const interval = setInterval(processQueue, 500);
+      return () => {
+        clearInterval(interval);
+        // หยุดการพูดถ้ามีการ unmount component
+        if (speechSynthesisRef.current && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      };
+    }
+  }, [processQueue, ttsEnabled]);
 
   useEffect(() => {
     if (!token) return;
-    if (!ttsEnabled) return;
 
     const socket = io('http://localhost:3000', {
       query: { token },
@@ -195,27 +152,17 @@ export default function Home() {
     return () => {
       socket.disconnect();
     };
-  }, [token, ttsEnabled]);
+  }, [token]);
 
-  // const handleEnableTTS = () => {
-  //   // Once user clicks, TTS can be allowed
-  //   hasInteracted.current = true;
-  //   setTTSEnabled(true);
-
-  //   // Dummy first utterance (บาง browser ต้องมีการเรียก speak() สั้น ๆ ก่อน)
-  //   const initUtterance = new SpeechSynthesisUtterance('ระบบพร้อมใช้งานแล้ว');
-  //   initUtterance.lang = 'th-TH';
-  //   window.speechSynthesis.speak(initUtterance);
-  // };
-
-  const handleEnableTTSV2 = async () => {
+  const handleEnableTTS = () => {
     // Once user clicks, TTS can be allowed
     hasInteracted.current = true;
     setTTSEnabled(true);
 
-    const url = await getTTSAudio('ระบบพร้อมใช้งานแล้ว');
-    const audio = new Audio(url);
-    audio.play();
+    // Dummy first utterance (บาง browser ต้องมีการเรียก speak() สั้น ๆ ก่อน)
+    const initUtterance = new SpeechSynthesisUtterance('ระบบพร้อมใช้งานแล้ว');
+    initUtterance.lang = 'th-TH';
+    window.speechSynthesis.speak(initUtterance);
   };
 
   const currentDonation = donations.find((item) => item.id === fadingItemId);
@@ -232,7 +179,7 @@ export default function Home() {
         {!ttsEnabled && (
           <>
             <button
-              onClick={handleEnableTTSV2}
+              onClick={handleEnableTTS}
               className='m-2 p-2 text-black rounded-xl border-[2] border-green-600 '
             >
               <div>✅ เริ่มต้นระบบ</div>
@@ -284,7 +231,7 @@ export default function Home() {
           {visibleQueue.map((item) => (
             <li
               key={item.id}
-              className={`py-1 px-1 rounded bg-white/10 backdrop-blur transition-opacity duration-500 transform ${
+              className={`py-1 rounded bg-white/10 backdrop-blur transition-opacity duration-500 transform ${
                 item.id === fadingItemId
                   ? 'opacity-0 -translate-y-2'
                   : 'opacity-100'
