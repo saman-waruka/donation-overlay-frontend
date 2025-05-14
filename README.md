@@ -45,16 +45,49 @@ A simple, customizable donation overlay built with Next.js and TypeScript. This 
    ```
 
 5. **Open your browser:**
-   Visit [http://localhost:3000](http://localhost:3000) to view the overlay.
+   Visit [http://localhost:3001](http://localhost:3001) to view the overlay.
 
 6. **Usage:**
    - Add `?token=YOUR_TOKEN` to the URL to authenticate and start receiving donations.
-     example: [http://localhost:3000?token=YOUR_TOKEN](http://localhost:3000?token=YOUR_TOKEN)
+     example: [http://localhost:3001?token=YOUR_TOKEN](http://localhost:3001?token=YOUR_TOKEN)
 
 ### Customizing the Port
 
-By default, the app runs at `http://localhost:3000`.  
+By default, the app runs at `http://localhost:3001`.  
 If you want to change the port, set the `PORT` environment variable in your `.env.local` file, for example:
+
+---
+
+## Using with OBS, Streamlabs, or Twitch (Streaming Software)
+
+To display donation notifications with TTS (text-to-speech) in your streaming software, follow these steps:
+
+1. **Add a Browser Source:**
+
+   - In OBS, Streamlabs, or your streaming software, add a new **Browser Source**.
+   - Set the URL to:
+     ```
+     http://localhost:3001?token=YOUR_TOKEN
+     ```
+     Replace `YOUR_TOKEN` with your actual token.
+
+2. **Interact with the Browser Source:**
+
+   - After adding the browser source, you **must interact with it** to enable audio playback (required by browsers for TTS).
+   - In OBS/Streamlabs, right-click the browser source and select **Interact** (or similar).
+   - In the popup window, click the button labeled **"✅ เริ่มต้นระบบ"**.
+   - If you hear the system speak, everything is working correctly.
+   - You should also see a message like:  
+     **"✅ Connected: ..."** with your current connection ID.
+
+3. **Troubleshooting:**
+   - If you **do not hear any speech** or see **"❌ Disconnected"** at the bottom of the page:
+     - Your `YOUR_TOKEN` may be incorrect.
+     - Double-check your token value.
+     - Refresh the page and repeat from step 1.
+
+> **Note:**  
+> You must keep the browser source open and connected for donation notifications and TTS to work during your stream.
 
 ---
 
@@ -76,7 +109,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
